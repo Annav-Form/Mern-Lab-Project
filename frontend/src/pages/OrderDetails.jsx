@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getOrderById, updateOrderStatus } from "../services/api";
+import { getOrderById } from "../services/api";
 import Navbar from "../components/Navbar";
 
 export default function OrderDetails() {
@@ -10,8 +10,6 @@ export default function OrderDetails() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
 
   const fetchOrder = async () => {
     setLoading(true);
@@ -37,24 +35,6 @@ export default function OrderDetails() {
   useEffect(() => {
     fetchOrder();
   }, [id]);
-
-  const handleStatusChange = async (newStatus) => {
-    setStatusUpdating(true);
-    setStatusMsg("");
-    try {
-      const res = await updateOrderStatus(id, newStatus);
-      if (res.data?.success) {
-        setOrder(res.data.order);
-        setStatusMsg(`Status updated to ${newStatus}`);
-        setTimeout(() => setStatusMsg(""), 3000);
-      }
-    } catch (err) {
-      setStatusMsg("Failed to update status");
-      setTimeout(() => setStatusMsg(""), 3000);
-    } finally {
-      setStatusUpdating(false);
-    }
-  };
 
   const formatPrice = (price) =>
     new Intl.NumberFormat("en-IN", {
@@ -129,10 +109,10 @@ export default function OrderDetails() {
               </div>
             </div>
 
-            {/* Bonus Challenge: Status Progression Tracker & Demo Controls */}
+            {/* Status Progression Tracker */}
             <div className="order-tracker-card">
               <h3 style={{ fontSize: "1rem", marginBottom: "16px", color: "var(--text-secondary)" }}>
-                🚚 Live Delivery Tracker (Lab-06 Bonus)
+                🚚 Delivery Status Tracker
               </h3>
 
               <div className="status-tracker-container" style={{ margin: "16px 0 24px" }}>
@@ -152,29 +132,6 @@ export default function OrderDetails() {
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Status Switcher (Bonus demo control) */}
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                  Change Status (Demo):
-                </span>
-                {statusSteps.map((s) => (
-                  <button
-                    key={s}
-                    className={`btn ${order.status === s ? "btn-primary" : "btn-outline"}`}
-                    style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                    disabled={statusUpdating}
-                    onClick={() => handleStatusChange(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
-                {statusMsg && (
-                  <span style={{ fontSize: "0.85rem", color: "var(--accent-green)", marginLeft: "8px" }}>
-                    {statusMsg}
-                  </span>
-                )}
               </div>
             </div>
 

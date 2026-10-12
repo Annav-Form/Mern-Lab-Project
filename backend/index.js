@@ -48,17 +48,46 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Connect to MongoDB and Start Server ──────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
+async function startServer() {
+  let uri = process.env.MONGO_URI;
+
+  try {
+    if (!uri) throw new Error("MONGO_URI not set");
+    console.log("Connecting to MongoDB at:", uri);
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 2000 });
     console.log("✅ Connected to MongoDB");
-    app.listen(PORT, () => {
-      console.log(`🚀 ShopKart server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection failed:", err.message);
-    process.exit(1);
+  } catch (err) {
+    console.warn(`⚠️ Could not connect to primary MongoDB (${err.message}). Starting in-memory MongoDB...`);
+    const { MongoMemoryServer } = require("mongodb-memory-server");
+    const mongod = await MongoMemoryServer.create();
+    uri = mongod.getUri();
+    await mongoose.connect(uri);
+    console.log("✅ In-memory MongoDB running at:", uri);
+
+    // Auto-seed initial catalog products so everything works immediately
+    try {
+      const Product = require("./models/product.model");
+      const count = await Product.countDocuments();
+      if (count === 0) {
+        const seedModule = require("./utils/seed");
+        if (typeof seedModule.seedSampleData === "function") {
+          await seedModule.seedSampleData();
+        }
+      }
+    } catch (seedErr) {
+      console.warn("Seeding notice:", seedErr.message);
+    }
+  }
+
+  app.listen(PORT, () => {
+    console.log(`🚀 ShopKart server running on http://localhost:${PORT}`);
   });
+}
+
+startServer().catch((err) => {
+  console.error("❌ Failed to start server:", err);
+  process.exit(1);
+});
+

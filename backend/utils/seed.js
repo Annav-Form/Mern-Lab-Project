@@ -56,6 +56,13 @@ const sampleProducts = [
   },
 ];
 
+async function seedSampleData() {
+  await Product.deleteMany({});
+  const inserted = await Product.insertMany(sampleProducts);
+  console.log(`Successfully seeded ${inserted.length} sample products!`);
+  return inserted;
+}
+
 async function seedDatabase() {
   try {
     if (!process.env.MONGO_URI) {
@@ -66,11 +73,7 @@ async function seedDatabase() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("Connected to MongoDB.");
 
-    await Product.deleteMany({});
-    console.log("Cleared existing products.");
-
-    const inserted = await Product.insertMany(sampleProducts);
-    console.log(`Successfully seeded ${inserted.length} products!`);
+    await seedSampleData();
 
     // Clear all customer carts and wishlists — old product ObjectIds are now invalid
     const cartResult = await Customer.updateMany({}, { $set: { cart: [], wishlist: [] } });
@@ -85,4 +88,13 @@ async function seedDatabase() {
   }
 }
 
-seedDatabase();
+if (require.main === module) {
+  seedDatabase();
+}
+
+module.exports = {
+  sampleProducts,
+  seedSampleData,
+  seedDatabase,
+};
+
